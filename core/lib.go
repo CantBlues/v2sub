@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"encoding/base64"
@@ -13,6 +13,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -20,12 +21,15 @@ const (
 	trojanProtocol = "trojan"
 	socksProtocol  = "socks"
 	ssProtocol     = "shadowsocks"
+	duration     = 5 * time.Second // 建议至少 5s
+	//ruleUrl     = "https://raw.githubusercontent.com/PaPerseller/chn-iplist/master/v2ray-config_rule.txt"
+
 )
 
 // ExitWithMsg 输出 msg 并退出
 func ExitWithMsg(msg interface{}, code int) {
 	fmt.Println(msg)
-	os.Exit(code)
+	// os.Exit(code)
 }
 
 // FileExist 判断文件是否存在
@@ -41,6 +45,8 @@ func FileExist(name string) bool {
 func ReadConfig(name string) (*types.Config, error) {
 	data, err := ioutil.ReadFile(name)
 	if err != nil {
+		fileData, _ := json.Marshal(template.ConfigTemplate)
+		WriteFile(name, fileData)
 		return template.ConfigTemplate, nil // return error?
 	}
 
@@ -137,8 +143,6 @@ func ParseNodes(data []string) (types.Nodes, []string) {
 				nodes = append(nodes, node)
 			}
 
-		default:
-			retData = append(retData, data[i])
 		}
 	}
 
@@ -146,6 +150,9 @@ func ParseNodes(data []string) (types.Nodes, []string) {
 }
 
 func parseTrojanSub(data string) (*types.Node, bool) {
+	var port int
+	var err error
+	var host string
 	idEnd := strings.Index(data, "@")
 	if idEnd < 0 {
 		return nil, false
@@ -161,14 +168,25 @@ func parseTrojanSub(data string) (*types.Node, bool) {
 	data = data[addrEnd+1:]
 
 	portEnd := strings.Index(data, "?")
-	if portEnd < 0 {
+	portEnd1 := strings.Index(data, "#")
+	sni := strings.Index(data, "sni=")
+	if portEnd < 0 && portEnd1 < 0 {
 		return nil, false
 	}
-	port, err := strconv.Atoi(data[:portEnd])
+	if portEnd < 0 {
+		port, err = strconv.Atoi(data[:portEnd1])
+		data = data[portEnd1:]
+	} else {
+		port, err = strconv.Atoi(data[:portEnd])
+		if sni >= 0 {
+			host = data[sni+4 : portEnd1]
+		}
+		data = data[portEnd+1:]
+	}
+
 	if err != nil {
 		return nil, false
 	}
-	data = data[portEnd+1:]
 
 	nameBegin := strings.Index(data, "#") + 1
 	if nameBegin <= 0 {
@@ -186,6 +204,7 @@ func parseTrojanSub(data string) (*types.Node, bool) {
 		Addr: addr,
 		Port: port,
 		UID:  id,
+		Host: host,
 	}, true
 }
 
@@ -256,51 +275,13 @@ func WriteFile(name string, data []byte) error {
 	return file.Close()
 }
 
-func setRuleProxy(config *types.V2ray) {
-	config.DNSConfigs = template.DefaultDNSConfigs
-	config.RouterConfig = template.DefaultRouterConfigs
-}
-
-func setGlobalProxy(config *types.V2ray) {
-	config.DNSConfigs = nil
-	config.RouterConfig = nil
-}
-
-func listenOnLocal(config *types.V2ray) {
-	for i := range config.InboundConfigs {
-		config.InboundConfigs[i].ListenOn = template.ListenOnLocalAddr
-	}
-}
-
-func listenOnWan(config *types.V2ray) {
-	for i := range config.InboundConfigs {
-		config.InboundConfigs[i].ListenOn = template.ListenOnWanAddr
-	}
-}
-
-func listenOnPort(config *types.V2ray) {
-	for i := range config.InboundConfigs {
-		switch config.InboundConfigs[i].Protocol {
-		case template.ListenOnSocksProtocol:
-			if flags.socksPort != 0 {
-				config.InboundConfigs[i].Port = uint32(flags.socksPort)
-			}
-
-		case template.ListenOnHttpProtocol:
-			if flags.httpPort != 0 {
-				config.InboundConfigs[i].Port = uint32(flags.httpPort)
-			}
-		}
-	}
-}
-
 func parsePort(v interface{}) (port int) {
 	portStr := fmt.Sprintf("%v", v)
 	port, _ = strconv.Atoi(portStr)
 	return
 }
 
-func printAsTable(nodes types.Nodes) {
+func PrintAsTable(nodes types.Nodes) {
 	var tableData []types.TableRow
 	for i := range nodes {
 		tableData = append(tableData, types.TableRow{
@@ -311,16 +292,4 @@ func printAsTable(nodes types.Nodes) {
 			Ping:  nodes[i].Ping})
 	}
 	table.Output(tableData)
-}
-
-func allDone(cfg *types.Config) {
-	var msg string
-	for _, inboundConfig := range cfg.V2rayConfig.InboundConfigs {
-		if len(msg) == 0 {
-			msg = "\n开始监听...\n"
-		}
-		msg += fmt.Sprintf("%s://%s:%d\n", inboundConfig.Protocol, inboundConfig.ListenOn, inboundConfig.Port)
-	}
-	msg += "\nAll done."
-	fmt.Println(msg)
 }

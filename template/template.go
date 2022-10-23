@@ -14,37 +14,43 @@ const (
 
 	ListenOnHttpProtocol = "http"
 	ListenOnHttpPort     = 1082
-)
 
-var domainStrategy = "ipondemand"
+	SocksPort = 12345
+)
 
 var ConfigTemplate = &types.Config{
 	SubUrl: "",
 	Nodes:  types.Nodes{},
-	V2rayConfig: types.V2ray{
-		RouterConfig: &types.RouterConfig{
-			RuleList:       nil,
-			DomainStrategy: domainStrategy,
+	Current: 0,
+}
+
+// V2ray Default struct
+var V2rayDefault = &types.V2ray{
+	OutboundConfigs: []types.OutboundConfig{
+		{
+			Protocol: "blackhole",
+			Tag:"blocked",
 		},
-		OutboundConfigs: []types.OutboundConfig{},
-		InboundConfigs: []types.InboundConfig{
-			{
-				Protocol: ListenOnSocksProtocol,
-				Port:     ListenOnSocksPort,
-				ListenOn: ListenOnLocalAddr,
-				//PortRange: &conf.PortRange{ // [from, to]
-				//	From: 1080,
-				//	To:   1080,
-				//}, // https://github.com/v2ray/v2ray-core/blob/v4.21.3/app/proxyman/inbound/always.go#L91
-				//ListenOn: &conf.Address{Address: net.ParseAddress("127.0.0.1")},
+
+	},
+	InboundConfigs: []types.InboundConfig{
+		{
+			Protocol: "dokodemo-door",
+			Port:     SocksPort,
+			Sniffing: &types.Sniffing{
+				Enabled:      true,
+				DestOverride: []string{"http", "tls"},
 			},
-			{
-				Protocol: ListenOnHttpProtocol,
-				Port:     ListenOnHttpPort,
-				ListenOn: ListenOnLocalAddr,
+			Settings: &types.InBoundSetting{
+				Network:        "tcp",
+				FollowRedirect: true,
+			},
+			StreamSetting: &types.StreamSetting{
+				Sockopt: &types.Sockopt{Tproxy: "redirect"},
 			},
 		},
 	},
+	RouterConfig: DefaultRouterConfigs,
 }
 
 // DefaultDNSConfigs 默认路由规则
@@ -62,32 +68,27 @@ var DefaultDNSConfigs = &types.DNSConfig{Servers: []json.RawMessage{
 }}
 
 var DefaultRouterConfigs = &types.RouterConfig{
-	RuleList: []json.RawMessage{
-		[]byte(
-			`{
-				"type": "field",
-				"outboundTag": "direct",
-				"domain": [
-					"geosite:cn"
-				]
-			}`),
-		[]byte(
-			`{
-                "type": "field",
-                "outboundTag": "direct",
-                "ip": [
-                    "geoip:cn",
-                    "geoip:private"
-                ]
-            }`),
-		[]byte(
-			`{
-                "type": "field",
-                "outboundTag": "proxy",
-                "network": "udp,tcp"
-            }`),
+	Strategy: "rules",
+	RouteSetting: &types.RouteSetting{
+		Rules: []json.RawMessage{
+			[]byte(
+				`{
+					"type": "field",
+					"outboundTag": "proxy",
+					"domain": [
+						"ext:site.dat:gw"
+					]
+				}`),
+			[]byte(
+				`{
+					"type": "field",
+					"outboundTag": "blocked",
+					"domain": [
+						"ext:site.dat:ad"
+					]
+				}`),
+		},
 	},
-	DomainStrategy: domainStrategy,
 }
 
 var DefaultOutboundConfigs = []types.OutboundConfig{

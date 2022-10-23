@@ -5,9 +5,9 @@ import (
 )
 
 type Config struct {
-	SubUrl      string `json:"subUrl"`
-	Nodes       Nodes  `json:"nodes"`
-	V2rayConfig V2ray  `json:"v2rayConfig"`
+	SubUrl  string `json:"subUrl"`
+	Nodes   Nodes  `json:"nodes"`
+	Current int    `json:"current"`
 }
 
 type V2ray struct {
@@ -22,8 +22,12 @@ type DNSConfig struct {
 }
 
 type RouterConfig struct {
-	RuleList       []json.RawMessage `json:"rules"`
-	DomainStrategy string            `json:"domainStrategy"`
+	Strategy     string        `json:"strategy"`
+	RouteSetting *RouteSetting `json:"settings"`
+}
+
+type RouteSetting struct {
+	Rules []json.RawMessage `json:"rules"`
 }
 
 type OutboundConfig struct {
@@ -34,22 +38,37 @@ type OutboundConfig struct {
 }
 
 type InboundConfig struct {
-	Protocol string `json:"protocol"`
-	Port     uint32 `json:"port"`
-	ListenOn string `json:"listen"`
+	Protocol      string          `json:"protocol"`
+	Port          uint32          `json:"port"`
+	Sniffing      *Sniffing       `json:"sniffing"`
+	Settings      *InBoundSetting `json:"settings"`
+	StreamSetting *StreamSetting  `json:"streamSettings"`
 }
 
+type Sniffing struct {
+	Enabled      bool     `json:"enabled"`
+	DestOverride []string `json:"destOverride"`
+}
+
+type InBoundSetting struct {
+	Network        string `json:"network"`
+	FollowRedirect bool   `json:"followRedirect"`
+}
 type VnextOutboundSetting struct {
 	VNext []VNextConfig `json:"vnext"`
 }
 
 type VNextConfig struct {
-	Address string `json:"address"`
-	Port    int    `json:"port"`
-	Tag     string `json:"tag"`
-	Users   []struct {
-		ID string `json:"id"`
-	} `json:"users"`
+	Address string      `json:"address"`
+	Port    int         `json:"port"`
+	Tag     string      `json:"tag"`
+	Users   []VNextUser `json:"users"`
+}
+
+type VNextUser struct {
+	ID       string `json:"id"`
+	Security string `json:"security"`
+	AlterId  int    `json:"alterId"`
 }
 
 type SocksOutboundSetting struct {
@@ -78,6 +97,40 @@ type SSServerConfig struct {
 type StreamSetting struct {
 	Network  string `json:"network"`
 	Security string `json:"security"`
+
+	TcpStream  *TcpStream  `json:"tcpSettings"`
+	TlsStream  *TlsStream  `json:"tlsSettings"`
+	KcpStream  *KcpStream  `json:"kcpSettings"`
+	WsStream   *WsStream   `json:"wsSettings"`
+	QuicStream *QuicStream `json:"quicSettings"`
+
+	Sockopt *Sockopt `json:"sockopt"`
+}
+
+type TlsStream struct {
+	ServerName    string `json:"serverName"`
+	AllowInsecure bool   `json:"allowInsecure"`
+}
+
+type WsStream struct {
+	Path string `json:"path"`
+	Header *Header `json:"headers"`
+}
+type Header struct{
+	Host string `json:"Host"`
+}
+
+type QuicStream struct {
+}
+type TcpStream struct {
+}
+type KcpStream struct {
+}
+
+
+type Sockopt struct {
+	Tproxy string `json:"tproxy"`
+	Mark   int    `json:"mark"`
 }
 
 type Trojan struct {
@@ -100,6 +153,7 @@ type Node struct {
 	TLS      string      `json:"tls"`
 	Protocol string      `json:"protocol"`
 	AID      interface{} `json:"aid"`
+	Path     string      `json:"path"`
 
 	Ping int `json:"-"`
 }
