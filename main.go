@@ -3,52 +3,39 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/arkrz/v2sub/core"
+	"github.com/arkrz/v2sub/types"
 	"net/http"
 	"strconv"
-	"time"
-
-	"github.com/arkrz/v2sub/core"
-	"github.com/arkrz/v2sub/template"
-	"github.com/arkrz/v2sub/types"
-)
-
-const (
-	v2subConfig = "./v2sub.json"
-	v2rayConfig = "./v2ray.json"
-	duration    = 5 * time.Second // 建议至少 5s
 )
 
 var (
-	urls   = []string{"https://bulink.me/sub/3dpe3/vm", "https://g.luxury/link/oSDnm6qP5MdkyDvc?sub=4"}
 	subCfg *types.Config
-	v2ray  *types.V2ray
 )
 
 func main() {
-	subCfg, _ = core.ReadConfig(v2subConfig)
-	v2ray = template.V2rayDefault
-	// http.HandleFunc("/fetch", fetch)
-	// http.HandleFunc("/change", change)
-	// http.ListenAndServe(":89", nil)
+
+	core.LoadConf()
+	core.DisableIptable()
+
+	subCfg = core.SubCfg
+
+	http.HandleFunc("/fetch", fetch)
+	http.HandleFunc("/change", change)
+	http.HandleFunc("/close", closeIptable)
+	http.HandleFunc("/start", startService)
+	http.ListenAndServe(":89", nil)
 	fmt.Println("listen")
 
-	nodes := core.GetNodes(urls)
-	v2ray.OutboundConfigs = core.SetOutbound(nodes[34])
-
-	data, _ := json.Marshal(v2ray)
-	core.WriteFile(v2rayConfig, data)
-	// core.PrintAsTable(nodes)
 }
 
 func fetch(w http.ResponseWriter, r *http.Request) {
-
 	refresh := r.URL.Query().Get("refresh")
 
 	if len(subCfg.Nodes) == 0 || refresh != "" {
-		subCfg.Nodes = core.GetNodes(urls)
+		subCfg.Nodes = core.GetNodes()
 	}
 	data, _ := json.Marshal(subCfg.Nodes)
-
 	w.Write(data)
 }
 
@@ -60,7 +47,21 @@ func change(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if nums < subCfg.Nodes.Len() {
-		subCfg.Current = nums
-		core.SetOutbound(subCfg.Nodes[nums])
+		subCfg.Current = subCfg.Nodes[nums]
+		err := core.SwitchNode(subCfg.Nodes[nums])
+		if err != nil {
+			return
+		}
+		w.Write([]byte{'o', 'k'})
 	}
+}
+
+func closeIptable(w http.ResponseWriter, r *http.Request) {
+	core.DisableIptable()
+	w.Write([]byte{'o', 'k'})
+}
+
+func startService(w http.ResponseWriter, r *http.Request) {
+	core.StartService()
+	w.Write([]byte{'o', 'k'})
 }

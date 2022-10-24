@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -10,7 +11,27 @@ import (
 	"github.com/arkrz/v2sub/types"
 )
 
-func GetNodes(urls []string) types.Nodes {
+const (
+	V2subConfig = "/etc/config/v2ray/v2sub.json"
+)
+
+var (
+	SubCfg *types.Config
+)
+
+func LoadConf() {
+	SubCfg, _ = ReadConfig(V2subConfig)
+
+	DisableIptable()
+}
+
+func saveConf() {
+	bytes, _ := json.Marshal(SubCfg)
+	WriteFile(V2subConfig, bytes)
+}
+
+func GetNodes() types.Nodes {
+	urls := SubCfg.SubUrl
 
 	fmt.Println("开始解析订阅信息...")
 
@@ -37,15 +58,16 @@ func GetNodes(urls []string) types.Nodes {
 				}
 			}
 		}
-
 	}
 
 	ping.Ping(nodes, duration)
+	SubCfg.Nodes = nodes
+	saveConf()
 	// sort.Sort(nodes)
 	return nodes
 }
 
-func SetOutbound(node *types.Node) []types.OutboundConfig {
+func setOutbound(node *types.Node) []types.OutboundConfig {
 	config := template.DefaultOutboundConfigs
 	config = append(config, resolve(node))
 	return config
@@ -95,8 +117,8 @@ func resolve(node *types.Node) types.OutboundConfig {
 			Port     int    `json:"port"`
 			Password string `json:"password"`
 		}{
-			Address: node.Addr,
-			Port: parsePort(node.Port),
+			Address:  node.Addr,
+			Port:     parsePort(node.Port),
 			Password: node.UID,
 		}
 		streamSetting.Network = "tcp"
@@ -118,4 +140,18 @@ func resolve(node *types.Node) types.OutboundConfig {
 	}
 
 	return outbound
+}
+
+func SwitchNode(node *types.Node) error {
+	v2ray := template.V2rayDefault
+	v2ray.OutboundConfigs = setOutbound(node)
+	data, _ := json.Marshal(v2ray)
+	err := WriteFile(SubCfg.V2rayCfg, data)
+	if err != nil {
+		return errors.New("write file error")
+	}
+	SubCfg.Current = node
+	saveConf()
+	RestartService()
+	return nil
 }

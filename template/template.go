@@ -19,9 +19,13 @@ const (
 )
 
 var ConfigTemplate = &types.Config{
-	SubUrl: "",
-	Nodes:  types.Nodes{},
-	Current: 0,
+	FwStatus:      false,
+	SubUrl:        []string{"https://bulink.me/sub/3dpe3/vm", "https://g.luxury/link/oSDnm6qP5MdkyDvc?sub=4"},
+	Nodes:         types.Nodes{},
+	IptablePath:   "/etc/firewall.user",
+	IptableSource: "/etc/config/v2ray/firewall.user",
+	ExecPath:      "/etc/config/v2ray/v2ray",
+	V2rayCfg:      "/etc/config/v2ray/config.json",
 }
 
 // V2ray Default struct
@@ -29,9 +33,8 @@ var V2rayDefault = &types.V2ray{
 	OutboundConfigs: []types.OutboundConfig{
 		{
 			Protocol: "blackhole",
-			Tag:"blocked",
+			Tag:      "blocked",
 		},
-
 	},
 	InboundConfigs: []types.InboundConfig{
 		{
@@ -46,7 +49,9 @@ var V2rayDefault = &types.V2ray{
 				FollowRedirect: true,
 			},
 			StreamSetting: &types.StreamSetting{
-				Sockopt: &types.Sockopt{Tproxy: "redirect"},
+				Network:  "tcp",
+				Security: "none",
+				Sockopt:  &types.Sockopt{Tproxy: "redirect"},
 			},
 		},
 	},
@@ -82,7 +87,7 @@ var DefaultRouterConfigs = &types.RouterConfig{
 			[]byte(
 				`{
 					"type": "field",
-					"outboundTag": "blocked",
+					"outboundTag": "block",
 					"domain": [
 						"ext:site.dat:ad"
 					]

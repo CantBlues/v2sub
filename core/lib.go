@@ -1,6 +1,7 @@
 package core
 
 import (
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -21,7 +22,7 @@ const (
 	trojanProtocol = "trojan"
 	socksProtocol  = "socks"
 	ssProtocol     = "shadowsocks"
-	duration     = 5 * time.Second // 建议至少 5s
+	duration       = 5 * time.Second // 建议至少 5s
 	//ruleUrl     = "https://raw.githubusercontent.com/PaPerseller/chn-iplist/master/v2ray-config_rule.txt"
 
 )
@@ -85,7 +86,9 @@ func GetSub(url string, ch chan<- []string) {
 }
 
 func httpGet(url string) ([]byte, error) {
-	data, err := http.Get(url)
+	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	client := &http.Client{Transport: tr}
+	data, err := client.Get(url)
 	if err != nil {
 		return nil, err
 	}

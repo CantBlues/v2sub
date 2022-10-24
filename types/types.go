@@ -5,9 +5,14 @@ import (
 )
 
 type Config struct {
-	SubUrl  string `json:"subUrl"`
-	Nodes   Nodes  `json:"nodes"`
-	Current int    `json:"current"`
+	SubUrl        []string `json:"subUrl"`
+	Nodes         Nodes    `json:"nodes"`
+	Current       *Node    `json:"current"`
+	IptablePath   string   `json:"iptable"`
+	IptableSource string   `json:"ipSource"`
+	FwStatus      bool     `json:"status"`
+	V2rayCfg      string   `json:"v2rayConfig"`
+	ExecPath      string   `json:"v2ray"`
 }
 
 type V2ray struct {
@@ -113,10 +118,10 @@ type TlsStream struct {
 }
 
 type WsStream struct {
-	Path string `json:"path"`
+	Path   string  `json:"path"`
 	Header *Header `json:"headers"`
 }
-type Header struct{
+type Header struct {
 	Host string `json:"Host"`
 }
 
@@ -126,7 +131,6 @@ type TcpStream struct {
 }
 type KcpStream struct {
 }
-
 
 type Sockopt struct {
 	Tproxy string `json:"tproxy"`
