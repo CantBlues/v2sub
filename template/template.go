@@ -30,12 +30,6 @@ var ConfigTemplate = &types.Config{
 
 // V2ray Default struct
 var V2rayDefault = &types.V2ray{
-	OutboundConfigs: []types.OutboundConfig{
-		{
-			Protocol: "blackhole",
-			Tag:      "blocked",
-		},
-	},
 	InboundConfigs: []types.InboundConfig{
 		{
 			Protocol: "dokodemo-door",
