@@ -22,8 +22,9 @@ func main() {
 
 	http.HandleFunc("/fetch", fetch)
 	http.HandleFunc("/change", change)
-	http.HandleFunc("/close", closeIptable)
+	http.HandleFunc("/iptable/toggle", toggleIptable)
 	http.HandleFunc("/start", startService)
+	http.HandleFunc("/iptable/status", checkIptable)
 	http.ListenAndServe(":89", nil)
 	fmt.Println("listen")
 
@@ -56,12 +57,23 @@ func change(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func closeIptable(w http.ResponseWriter, r *http.Request) {
-	core.DisableIptable()
-	w.Write([]byte{'o', 'k'})
+func toggleIptable(w http.ResponseWriter, r *http.Request) {
+	if subCfg.FwStatus {
+		core.DisableIptable()
+		w.Write([]byte{'o', 'k'})
+	} else {
+		core.EnableIptable()
+		w.Write([]byte{'o', 'k'})
+	}
 }
 
 func startService(w http.ResponseWriter, r *http.Request) {
 	core.StartService()
 	w.Write([]byte{'o', 'k'})
+}
+
+func checkIptable(w http.ResponseWriter, r *http.Request) {
+	if subCfg.FwStatus {
+		w.Write([]byte{'1'})
+	}
 }
