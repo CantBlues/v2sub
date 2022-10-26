@@ -36,7 +36,7 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 	if len(subCfg.Nodes) == 0 || refresh != "" {
 		subCfg.Nodes = core.GetNodes()
 	}
-	data, _ := json.Marshal(subCfg.Nodes)
+	data, _ := json.Marshal(subCfg)
 	w.Write(data)
 }
 
