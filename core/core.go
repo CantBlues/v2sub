@@ -4,11 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
-
-	"github.com/arkrz/v2sub/ping"
-	"github.com/arkrz/v2sub/template"
-	"github.com/arkrz/v2sub/types"
+	"github.com/CantBlues/v2sub/template"
+	"github.com/CantBlues/v2sub/types"
 )
 
 const (
@@ -38,17 +35,14 @@ func GetNodes() types.Nodes {
 	var nodes types.Nodes
 	subCh := make(chan []string, 1)
 	defer close(subCh)
-	for i := 0; i < len(urls); i++ {
-		go GetSub(urls[i], subCh)
-
-		select {
-		case <-time.After(duration):
-			ExitWithMsg(fmt.Sprintf("%s 后仍未获取到订阅信息, 请检查订阅地址和网络状况", duration.String()), 0)
-
-		case data := <-subCh:
-			if data == nil {
-				ExitWithMsg("base64 解码错误, 请核实订阅编码", 0)
-			}
+	for _, url := range urls {
+		go GetSub(url, subCh)
+	}
+	for range urls {
+		data := <-subCh
+		if data == nil {
+			ExitWithMsg("base64 解码错误或超时", 0)
+		} else {
 			node, data := ParseNodes(data)
 			nodes = append(nodes, node...)
 			if len(data) != 0 {
@@ -59,15 +53,12 @@ func GetNodes() types.Nodes {
 			}
 		}
 	}
-
-	ping.Ping(nodes, duration)
 	SubCfg.Nodes = nodes
 	saveConf()
-	// sort.Sort(nodes)
 	return nodes
 }
 
-func setOutbound(node *types.Node) []types.OutboundConfig {
+func SetOutbound(node *types.Node) []types.OutboundConfig {
 	config := template.DefaultOutboundConfigs
 	config = append(config, resolve(node))
 	return config
@@ -84,11 +75,11 @@ func resolve(node *types.Node) types.OutboundConfig {
 		outboundSetting = &types.VnextOutboundSetting{VNext: []types.VNextConfig{
 			{
 				Address: node.Addr,
-				Port:    parsePort(node.Port),
+				Port:    ParsePort(node.Port),
 				Users: []types.VNextUser{{
 					ID:       node.UID,
 					Security: node.Type,
-					AlterId:  parsePort(node.AID),
+					AlterId:  ParsePort(node.AID),
 				}},
 			},
 		}}
@@ -102,7 +93,7 @@ func resolve(node *types.Node) types.OutboundConfig {
 		outboundSetting = &types.SSOutboundSetting{Servers: []types.SSServerConfig{
 			{
 				Address:  node.Addr,
-				Port:     parsePort(node.Port),
+				Port:     ParsePort(node.Port),
 				Method:   node.Type,
 				Password: node.UID,
 			},
@@ -118,7 +109,7 @@ func resolve(node *types.Node) types.OutboundConfig {
 			Password string `json:"password"`
 		}{
 			Address:  node.Addr,
-			Port:     parsePort(node.Port),
+			Port:     ParsePort(node.Port),
 			Password: node.UID,
 		}
 		streamSetting.Network = "tcp"
@@ -144,7 +135,7 @@ func resolve(node *types.Node) types.OutboundConfig {
 
 func SwitchNode(node *types.Node) error {
 	v2ray := template.V2rayDefault
-	v2ray.OutboundConfigs = setOutbound(node)
+	v2ray.OutboundConfigs = SetOutbound(node)
 	data, _ := json.Marshal(v2ray)
 	err := WriteFile(SubCfg.V2rayCfg, data)
 	if err != nil {

@@ -2,7 +2,7 @@ package template
 
 import (
 	"encoding/json"
-	"github.com/arkrz/v2sub/types"
+	"github.com/CantBlues/v2sub/types"
 )
 
 const (
@@ -50,6 +50,26 @@ var V2rayDefault = &types.V2ray{
 		},
 	},
 	RouterConfig: DefaultRouterConfigs,
+}
+
+// GetTestCfg get v2ray config for speed test or latency time
+func GetTestCfg(port uint32) *types.V2ray {
+	var config = &types.V2ray{
+		InboundConfigs: []types.InboundConfig{
+			{
+				Protocol: "socks",
+				Listen:   "127.0.0.1",
+				Port:     port,
+				Settings: &types.InBoundSetting{},
+				Sniffing: &types.Sniffing{
+					Enabled:      true,
+					DestOverride: []string{"http", "tls"},
+				},
+			},
+		},
+		RouterConfig: DefaultRouterConfigs,
+	}
+	return config
 }
 
 // DefaultDNSConfigs 默认路由规则

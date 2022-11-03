@@ -48,6 +48,7 @@ type InboundConfig struct {
 	Sniffing      *Sniffing       `json:"sniffing"`
 	Settings      *InBoundSetting `json:"settings"`
 	StreamSetting *StreamSetting  `json:"streamSettings"`
+	Listen        string          `json:"listen"`
 }
 
 type Sniffing struct {
@@ -159,7 +160,9 @@ type Node struct {
 	AID      interface{} `json:"aid"`
 	Path     string      `json:"path"`
 
-	Ping int `json:"-"`
+	Ping  int    `json:"ping"`
+	Delay string    `json:"delay"`
+	Speed string `json:"speed"`
 }
 
 type Nodes []*Node
@@ -183,4 +186,6 @@ type TableRow struct {
 	Addr  string
 	Port  int
 	Ping  int
+	Delay string
+	Speed string
 }

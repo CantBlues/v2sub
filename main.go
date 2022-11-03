@@ -3,10 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/arkrz/v2sub/core"
-	"github.com/arkrz/v2sub/types"
 	"net/http"
 	"strconv"
+
+	"github.com/CantBlues/remoteWake/router"
+	"github.com/CantBlues/v2sub/core"
+	"github.com/CantBlues/v2sub/ping"
+	"github.com/CantBlues/v2sub/types"
 )
 
 var (
@@ -14,7 +17,7 @@ var (
 )
 
 func main() {
-
+	// heartbeat("ip:port")
 	core.LoadConf()
 	core.DisableIptable()
 
@@ -30,11 +33,16 @@ func main() {
 
 }
 
+func heartbeat(server string ){
+	go router.HeartBeatRoute(server)
+}
+
 func fetch(w http.ResponseWriter, r *http.Request) {
 	refresh := r.URL.Query().Get("refresh")
 
 	if len(subCfg.Nodes) == 0 || refresh != "" {
 		subCfg.Nodes = core.GetNodes()
+		go ping.Ping(subCfg.Nodes,core.Duration)
 	}
 	data, _ := json.Marshal(subCfg)
 	w.Write(data)

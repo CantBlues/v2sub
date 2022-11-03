@@ -6,6 +6,10 @@ import (
 	"os/exec"
 )
 
+const (
+	V2rayService = "/etc/init.d/v2ray"
+)
+
 func EnableIptable() {
 	SubCfg.FwStatus = true
 	exec.Command("cp", SubCfg.IptableSource, SubCfg.IptablePath).Run()
@@ -27,12 +31,18 @@ func DisableIptable() {
 }
 
 func StartService() {
-	exec.Command("/etc/init.d/v2ray", "start").Run()
+	exec.Command(V2rayService, "start").Run()
 }
 
 func RestartService() {
 	if !SubCfg.FwStatus {
 		EnableIptable()
 	}
-	exec.Command("/etc/init.d/v2ray", "restart").Run()
+	exec.Command(V2rayService, "restart").Run()
+}
+
+func StartTestProcess(configPath string) *exec.Cmd {
+	cmd := exec.Command("./v2ray.exe", "run", "-c", configPath)
+	cmd.Start()
+	return cmd
 }

@@ -1,9 +1,20 @@
 package ping
 
 import (
-	"github.com/arkrz/v2sub/types"
-	gop "github.com/sparrc/go-ping"
+	"crypto/tls"
+	"encoding/json"
+	"fmt"
+	"net"
+	"net/http"
+	"net/url"
+	"os"
+	"strconv"
 	"time"
+
+	"github.com/CantBlues/v2sub/core"
+	"github.com/CantBlues/v2sub/template"
+	"github.com/CantBlues/v2sub/types"
+	gop "github.com/sparrc/go-ping"
 )
 
 func Ping(nodes types.Nodes, duration time.Duration) {
@@ -41,4 +52,105 @@ func Ping(nodes types.Nodes, duration time.Duration) {
 			}
 		}
 	}
+}
+
+func TestAll(nodes types.Nodes) {
+	Ping(nodes, core.Duration)
+
+	for i, node := range nodes {
+		if node.Host == "127.0.0.1" || core.ParsePort(node.Port) <= 0 || node.Ping < 10 || node.Ping > 1000 {
+			continue
+		}
+		TestNodeQuality(node)
+
+		core.PrintAsTable(nodes)
+
+		if i > 20 {
+			break
+		}
+
+	}
+
+}
+
+func TestNodeQuality(node *types.Node) {
+
+	port, err := GetFreePort()
+	if err != nil {
+		fmt.Println("failed to get free port")
+		return
+	}
+
+	conf := template.GetTestCfg(uint32(port))
+	conf.OutboundConfigs = core.SetOutbound(node)
+	data, _ := json.Marshal(conf)
+	fileName := fmt.Sprintf("./test%s.json", strconv.Itoa(port))
+	core.WriteFile(fileName, data)
+	cmd := core.StartTestProcess(fileName)
+	node.Delay = httpPing(port)
+	node.Speed = speedTest(port)
+	fmt.Println(cmd.Process.Pid)
+	cmd.Process.Kill()
+	os.Remove(fileName)
+}
+
+func httpPing(port int) string {
+	delay := "-"
+	
+	proxy, _ := url.Parse("socks5://127.0.0.1:" + strconv.Itoa(port))
+	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, Proxy: http.ProxyURL(proxy)}
+	client := &http.Client{Transport: tr, Timeout: core.Duration}
+
+	core.RetryDo(3, time.Second*2, func() error {
+		start := time.Now()
+		_, err := client.Get("https://google.com")
+		if err != nil {
+			fmt.Println("get http error", err)
+			return err
+		}
+		end := time.Now()
+		duration := end.Sub(start)
+		delay = fmt.Sprint(duration)
+		return nil
+	})
+
+	return delay
+}
+
+func speedTest(port int) string {
+	speed := "-"
+
+	proxy, _ := url.Parse("socks5://127.0.0.1:" + strconv.Itoa(port))
+	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, Proxy: http.ProxyURL(proxy)}
+	client := &http.Client{Transport: tr, Timeout: core.Duration}
+
+	core.RetryDo(3, time.Second*2, func() error {
+		start := time.Now()
+		_, err := client.Get("http://cachefly.cachefly.net/10mb.test")
+		if err != nil {
+			fmt.Println("get http error", err)
+			return err
+		}
+		end := time.Now()
+		duration := end.Sub(start)
+		tmp := 10 / duration.Seconds()
+		speed = fmt.Sprint(tmp)
+		return nil
+	})
+
+	return speed
+}
+
+// 动态获取可用端口
+func GetFreePort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:0")
+	if err != nil {
+		return 0, err
+	}
+	l, err := net.Listen("tcp", addr.String())
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
 }

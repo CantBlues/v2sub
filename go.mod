@@ -1,8 +1,9 @@
-module github.com/arkrz/v2sub
+module github.com/CantBlues/v2sub
 
 go 1.12
 
 require (
+	github.com/CantBlues/remoteWake v0.0.0-20221030081745-e0f342db0559
 	github.com/modood/table v0.0.0-20181112072225-499dc7fba710
 	github.com/smartystreets/goconvey v1.7.2 // indirect
 	github.com/sparrc/go-ping v0.0.0-20190613174326-4e5b6552494c

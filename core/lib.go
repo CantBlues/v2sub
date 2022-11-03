@@ -5,9 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/arkrz/v2sub/template"
-	"github.com/arkrz/v2sub/types"
-	"github.com/modood/table"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -15,6 +12,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/CantBlues/v2sub/template"
+	"github.com/CantBlues/v2sub/types"
+	"github.com/modood/table"
 )
 
 const (
@@ -22,7 +23,7 @@ const (
 	trojanProtocol = "trojan"
 	socksProtocol  = "socks"
 	ssProtocol     = "shadowsocks"
-	duration       = 5 * time.Second // 建议至少 5s
+	Duration       = 5 * time.Second // 建议至少 5s
 	//ruleUrl     = "https://raw.githubusercontent.com/PaPerseller/chn-iplist/master/v2ray-config_rule.txt"
 
 )
@@ -58,36 +59,50 @@ func ReadConfig(name string) (*types.Config, error) {
 	return cfg, nil
 }
 
+func RetryDo(attempts int, sleep time.Duration, f func() error) error {
+	if err := f(); err != nil {
+		if attempts--; attempts > 0 {
+			jitter := time.Second * 2
+			sleep = sleep + jitter/2
+			time.Sleep(sleep)
+			return RetryDo(attempts, 2*sleep, f)
+		}
+		return err
+	}
+	return nil
+}
+
 // GetSub 从url中获取订阅信息并进行base64解码
 // http请求错误不发送任何信息; 解码错误发送nil
 func GetSub(url string, ch chan<- []string) {
-	body, err := httpGet(url)
-	if err != nil {
-		body, err = httpGet(url) // 尝试两次
+	err := RetryDo(2, time.Second*2, func() error {
+		body, err := httpGet(url)
 		if err != nil {
-			return // send none
+			return err
 		}
-	}
+		bodyStr := string(body)
+		complementLen := (4 - (len(bodyStr) % 4)) % 4
 
-	bodyStr := string(body)
-	complementLen := (4 - (len(bodyStr) % 4)) % 4
+		for i := 0; i < complementLen; i++ {
+			bodyStr += "="
+		}
 
-	for i := 0; i < complementLen; i++ {
-		bodyStr += "="
-	}
+		res, err := base64.StdEncoding.DecodeString(bodyStr)
+		if err != nil {
+			return err
+		}
 
-	res, err := base64.StdEncoding.DecodeString(bodyStr)
+		ch <- strings.Split(string(res[:len(res)-1]), "\n") // 多一个换行符
+		return nil
+	})
 	if err != nil {
 		ch <- nil
-		return // send nil
 	}
-
-	ch <- strings.Split(string(res[:len(res)-1]), "\n") // 多一个换行符
 }
 
 func httpGet(url string) ([]byte, error) {
 	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
-	client := &http.Client{Transport: tr}
+	client := &http.Client{Transport: tr,Timeout: Duration}
 	data, err := client.Get(url)
 	if err != nil {
 		return nil, err
@@ -278,7 +293,7 @@ func WriteFile(name string, data []byte) error {
 	return file.Close()
 }
 
-func parsePort(v interface{}) (port int) {
+func ParsePort(v interface{}) (port int) {
 	portStr := fmt.Sprintf("%v", v)
 	port, _ = strconv.Atoi(portStr)
 	return
@@ -291,8 +306,11 @@ func PrintAsTable(nodes types.Nodes) {
 			Index: i,
 			Name:  nodes[i].Name,
 			Addr:  nodes[i].Addr,
-			Port:  parsePort(nodes[i].Port),
-			Ping:  nodes[i].Ping})
+			Port:  ParsePort(nodes[i].Port),
+			Ping:  nodes[i].Ping,
+			Delay: nodes[i].Delay,
+			Speed: nodes[i].Speed,
+		})
 	}
 	table.Output(tableData)
 }

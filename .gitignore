@@ -6,3 +6,6 @@ go.sum
 .vscode
 upx.exe
 main
+site.dat
+v2ray.exe
+v2ray.json
