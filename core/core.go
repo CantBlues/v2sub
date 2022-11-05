@@ -60,11 +60,11 @@ func GetNodes() types.Nodes {
 
 func SetOutbound(node *types.Node) []types.OutboundConfig {
 	config := template.DefaultOutboundConfigs
-	config = append(config, resolve(node))
+	config = append(config, Resolve(node))
 	return config
 }
 
-func resolve(node *types.Node) types.OutboundConfig {
+func Resolve(node *types.Node) types.OutboundConfig {
 	var outbound types.OutboundConfig
 	var v2rayOutboundProtocol string
 	var outboundSetting interface{}

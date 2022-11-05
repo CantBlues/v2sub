@@ -4,11 +4,14 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"runtime"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/CantBlues/v2sub/core"
@@ -55,22 +58,28 @@ func Ping(nodes types.Nodes, duration time.Duration) {
 }
 
 func TestAll(nodes types.Nodes) {
+	cpus := runtime.NumCPU()
+	ch := make(chan int, cpus*2) // this channel is for limit go routine nums
+	var wg sync.WaitGroup
 	Ping(nodes, core.Duration)
 
-	for i, node := range nodes {
-		if node.Host == "127.0.0.1" || core.ParsePort(node.Port) <= 0 || node.Ping < 10 || node.Ping > 1000 {
+	for _, node := range nodes {
+		if core.ParsePort(node.Port) <= 0 || node.Ping < 10 || node.Ping > 1000 {
 			continue
 		}
-		TestNodeQuality(node)
-
-		core.PrintAsTable(nodes)
-
-		if i > 20 {
-			break
-		}
-
+		ch <- 1
+		wg.Add(1)
+		go func(n *types.Node) {
+			TestNodeQuality(n)
+			<-ch
+			wg.Done()
+		}(node)
 	}
-
+	wg.Wait()
+	close(ch)
+	core.PrintAsTable(nodes)
+	// data, _ := json.Marshal(core.SubCfg)
+	// core.WriteFile(core.SubCfg.V2rayCfg, data)
 }
 
 func TestNodeQuality(node *types.Node) {
@@ -82,21 +91,22 @@ func TestNodeQuality(node *types.Node) {
 	}
 
 	conf := template.GetTestCfg(uint32(port))
-	conf.OutboundConfigs = core.SetOutbound(node)
+	conf.OutboundConfigs = []types.OutboundConfig{core.Resolve(node)}
 	data, _ := json.Marshal(conf)
 	fileName := fmt.Sprintf("./test%s.json", strconv.Itoa(port))
 	core.WriteFile(fileName, data)
+
 	cmd := core.StartTestProcess(fileName)
 	node.Delay = httpPing(port)
 	node.Speed = speedTest(port)
-	fmt.Println(cmd.Process.Pid)
 	cmd.Process.Kill()
+
 	os.Remove(fileName)
 }
 
 func httpPing(port int) string {
 	delay := "-"
-	
+
 	proxy, _ := url.Parse("socks5://127.0.0.1:" + strconv.Itoa(port))
 	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, Proxy: http.ProxyURL(proxy)}
 	client := &http.Client{Transport: tr, Timeout: core.Duration}
@@ -125,12 +135,17 @@ func speedTest(port int) string {
 	client := &http.Client{Transport: tr, Timeout: core.Duration}
 
 	core.RetryDo(3, time.Second*2, func() error {
-		start := time.Now()
-		_, err := client.Get("http://cachefly.cachefly.net/10mb.test")
+
+		res, err := client.Get("http://cachefly.cachefly.net/10mb.test")
 		if err != nil {
 			fmt.Println("get http error", err)
 			return err
 		}
+		start := time.Now()
+
+		defer func() { res.Body.Close() }()
+		ioutil.ReadAll(res.Body)
+
 		end := time.Now()
 		duration := end.Sub(start)
 		tmp := 10 / duration.Seconds()

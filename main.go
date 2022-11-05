@@ -24,6 +24,8 @@ func main() {
 	subCfg = core.SubCfg
 
 	http.HandleFunc("/fetch", fetch)
+	http.HandleFunc("/detect", detectNode)
+	http.HandleFunc("/nodes/receive", receiveNode)
 	http.HandleFunc("/change", change)
 	http.HandleFunc("/iptable/toggle", toggleIptable)
 	http.HandleFunc("/start", startService)
@@ -33,7 +35,7 @@ func main() {
 
 }
 
-func heartbeat(server string ){
+func heartbeat(server string) {
 	go router.HeartBeatRoute(server)
 }
 
@@ -42,10 +44,26 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 
 	if len(subCfg.Nodes) == 0 || refresh != "" {
 		subCfg.Nodes = core.GetNodes()
-		go ping.Ping(subCfg.Nodes,core.Duration)
+		go ping.Ping(subCfg.Nodes, core.Duration)
 	}
 	data, _ := json.Marshal(subCfg)
 	w.Write(data)
+}
+
+func detectNode(w http.ResponseWriter, r *http.Request) {
+	go http.Get("http://192.168.0.174:9999/v2ray/detect")
+	w.Write([]byte{'1'})
+}
+
+func receiveNode(w http.ResponseWriter, r *http.Request) {
+	var nodes types.Nodes
+	decoder := json.NewDecoder(r.Body)
+	decoder.Decode(&nodes)
+	subCfg.Nodes = nodes
+
+	
+	d, _ := json.Marshal(subCfg)
+	w.Write(d)
 }
 
 func change(w http.ResponseWriter, r *http.Request) {

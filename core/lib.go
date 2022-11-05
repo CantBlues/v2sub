@@ -102,15 +102,13 @@ func GetSub(url string, ch chan<- []string) {
 
 func httpGet(url string) ([]byte, error) {
 	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
-	client := &http.Client{Transport: tr,Timeout: Duration}
+	client := &http.Client{Transport: tr, Timeout: Duration}
 	data, err := client.Get(url)
 	if err != nil {
 		return nil, err
 	}
+	defer data.Body.Close()
 
-	defer func() {
-		_ = data.Body.Close()
-	}()
 	return ioutil.ReadAll(data.Body)
 }
 

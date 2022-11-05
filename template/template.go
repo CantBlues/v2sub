@@ -9,12 +9,6 @@ const (
 	ListenOnLocalAddr = "127.0.0.1"
 	ListenOnWanAddr   = "0.0.0.0"
 
-	ListenOnSocksProtocol = "socks"
-	ListenOnSocksPort     = 1081
-
-	ListenOnHttpProtocol = "http"
-	ListenOnHttpPort     = 1082
-
 	SocksPort = 12345
 )
 
@@ -34,6 +28,7 @@ var V2rayDefault = &types.V2ray{
 		{
 			Protocol: "dokodemo-door",
 			Port:     SocksPort,
+			Listen:   ListenOnWanAddr,
 			Sniffing: &types.Sniffing{
 				Enabled:      true,
 				DestOverride: []string{"http", "tls"},
@@ -58,7 +53,7 @@ func GetTestCfg(port uint32) *types.V2ray {
 		InboundConfigs: []types.InboundConfig{
 			{
 				Protocol: "socks",
-				Listen:   "127.0.0.1",
+				Listen:   ListenOnLocalAddr,
 				Port:     port,
 				Settings: &types.InBoundSetting{},
 				Sniffing: &types.Sniffing{
@@ -67,7 +62,6 @@ func GetTestCfg(port uint32) *types.V2ray {
 				},
 			},
 		},
-		RouterConfig: DefaultRouterConfigs,
 	}
 	return config
 }
@@ -87,26 +81,25 @@ var DefaultDNSConfigs = &types.DNSConfig{Servers: []json.RawMessage{
 }}
 
 var DefaultRouterConfigs = &types.RouterConfig{
-	Strategy: "rules",
-	RouteSetting: &types.RouteSetting{
-		Rules: []json.RawMessage{
-			[]byte(
-				`{
-					"type": "field",
-					"outboundTag": "proxy",
-					"domain": [
-						"ext:site.dat:gw"
-					]
-				}`),
-			[]byte(
-				`{
-					"type": "field",
-					"outboundTag": "block",
-					"domain": [
-						"ext:site.dat:ad"
-					]
-				}`),
-		},
+	DomainStrategy: "AsIs",
+
+	Rules: []json.RawMessage{
+		[]byte(
+			`{
+				"type": "field",
+				"outboundTag": "proxy",
+				"domain": [
+					"ext:site.dat:gw"
+				]
+			}`),
+		[]byte(
+			`{
+				"type": "field",
+				"outboundTag": "block",
+				"domain": [
+					"ext:site.dat:ad"
+				]
+			}`),
 	},
 }
 

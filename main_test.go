@@ -3,9 +3,7 @@ package main
 import (
 	// "encoding/json"
 	"fmt"
-	"os/exec"
 	"testing"
-
 
 	"github.com/CantBlues/v2sub/core"
 	"github.com/CantBlues/v2sub/ping"
@@ -38,18 +36,7 @@ func TestGetPort(t *testing.T) {
 
 }
 
-func TestSpeed(t *testing.T){
+func TestSpeed(t *testing.T) {
 	nodes := core.GetNodes()
 	ping.TestAll(nodes)
-}
-
-func _TestGetPid(t *testing.T) {
-	t.Log("test get command pid")
-	cmd := exec.Command("./v2ray.exe", "run", "-c", "./v2ray.json")
-	cmd.Start()
-	pid := cmd.Process.Pid
-	fmt.Println(pid)
-	// cmd.Wait()
-	fmt.Println("get pid then")
-
 }

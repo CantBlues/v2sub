@@ -27,8 +27,8 @@ type DNSConfig struct {
 }
 
 type RouterConfig struct {
-	Strategy     string        `json:"strategy"`
-	RouteSetting *RouteSetting `json:"settings"`
+	DomainStrategy string            `json:"domainStrategy"`
+	Rules          []json.RawMessage `json:"rules"`
 }
 
 type RouteSetting struct {
@@ -161,7 +161,7 @@ type Node struct {
 	Path     string      `json:"path"`
 
 	Ping  int    `json:"ping"`
-	Delay string    `json:"delay"`
+	Delay string `json:"delay"`
 	Speed string `json:"speed"`
 }
 
