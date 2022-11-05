@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -95,13 +96,16 @@ func TestNodeQuality(node *types.Node) {
 	data, _ := json.Marshal(conf)
 	fileName := fmt.Sprintf("./test%s.json", strconv.Itoa(port))
 	core.WriteFile(fileName, data)
+	defer os.Remove(fileName)
 
-	cmd := core.StartTestProcess(fileName)
+	cmd, err := core.StartTestProcess(fileName)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	node.Delay = httpPing(port)
 	node.Speed = speedTest(port)
 	cmd.Process.Kill()
-
-	os.Remove(fileName)
 }
 
 func httpPing(port int) string {

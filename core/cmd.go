@@ -41,8 +41,8 @@ func RestartService() {
 	exec.Command(V2rayService, "restart").Run()
 }
 
-func StartTestProcess(configPath string) *exec.Cmd {
+func StartTestProcess(configPath string) (*exec.Cmd, error) {
 	cmd := exec.Command("./v2ray.exe", "run", "-c", configPath)
-	cmd.Start()
-	return cmd
+	err := cmd.Start()
+	return cmd, err
 }

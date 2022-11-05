@@ -58,10 +58,10 @@ func detectNode(w http.ResponseWriter, r *http.Request) {
 func receiveNode(w http.ResponseWriter, r *http.Request) {
 	var nodes types.Nodes
 	decoder := json.NewDecoder(r.Body)
+	defer r.Body.Close()
 	decoder.Decode(&nodes)
 	subCfg.Nodes = nodes
 
-	
 	d, _ := json.Marshal(subCfg)
 	w.Write(d)
 }
