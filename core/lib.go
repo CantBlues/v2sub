@@ -312,3 +312,28 @@ func PrintAsTable(nodes types.Nodes) {
 	}
 	table.Output(tableData)
 }
+
+type Queue struct {
+	Items []*types.Node
+	Len   int
+}
+
+func NewQueue(nums int) *Queue {
+	items := []*types.Node{}
+	return &Queue{Len: nums, Items: items}
+}
+
+func (q *Queue) Enqueue(item *types.Node) {
+	for {
+		if len(q.Items) >= q.Len {
+			q.Dequeue()
+			continue
+		}
+		break
+	}
+	q.Items = append(q.Items, item)
+}
+
+func (q *Queue) Dequeue() {
+	q.Items = q.Items[1:len(q.Items)]
+}

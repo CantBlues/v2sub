@@ -9,20 +9,23 @@ import (
 )
 
 const (
-	V2subConfig = "/etc/config/v2ray/v2sub.json"
+	// V2subConfig = "/etc/config/v2ray/v2sub.json"
+	V2subConfig = "./v2sub.json"
 )
 
 var (
-	SubCfg *types.Config
+	SubCfg     *types.Config
+	NodesQueue = NewQueue(30)
 )
 
 func LoadConf() {
 	SubCfg, _ = ReadConfig(V2subConfig)
-
+	NodesQueue.Items = SubCfg.History
 	DisableIptable()
 }
 
-func saveConf() {
+func SaveConf() {
+	SubCfg.History = NodesQueue.Items
 	bytes, _ := json.Marshal(SubCfg)
 	WriteFile(V2subConfig, bytes)
 }
@@ -54,7 +57,7 @@ func GetNodes() types.Nodes {
 		}
 	}
 	SubCfg.Nodes = nodes
-	saveConf()
+	SaveConf()
 	return nodes
 }
 
@@ -142,7 +145,7 @@ func SwitchNode(node *types.Node) error {
 		return errors.New("write file error")
 	}
 	SubCfg.Current = node
-	saveConf()
+	SaveConf()
 	RestartService()
 	return nil
 }
