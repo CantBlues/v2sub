@@ -314,12 +314,12 @@ func PrintAsTable(nodes types.Nodes) {
 }
 
 type Queue struct {
-	Items []*types.Node
+	Items types.Nodes
 	Len   int
 }
 
 func NewQueue(nums int) *Queue {
-	items := []*types.Node{}
+	var items types.Nodes
 	return &Queue{Len: nums, Items: items}
 }
 

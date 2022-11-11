@@ -26,9 +26,11 @@ func main() {
 
 	http.HandleFunc("/fetch", fetch)
 	http.HandleFunc("/detect", detectNode)
+	http.HandleFunc("/nodes/detect", detectNodes)
 	http.HandleFunc("/nodes/set", setNode)
 	http.HandleFunc("/nodes/receive", receiveNode)
-	http.HandleFunc("/nodes/history", historyNodes)
+	http.HandleFunc("/nodes/receiveMark", receiveMarkNode)
+	http.HandleFunc("/nodes/history", markedNodes)
 	http.HandleFunc("/nodes/mark", markNode)
 	http.HandleFunc("/change", change)
 	http.HandleFunc("/iptable/toggle", toggleIptable)
@@ -60,13 +62,34 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-func historyNodes(w http.ResponseWriter, r *http.Request) {
-	data, _ := json.Marshal(subCfg.History)
+func markedNodes(w http.ResponseWriter, r *http.Request) {
+	data, _ := json.Marshal(subCfg.Mark)
 	w.Write(data)
 }
 
 func detectNode(w http.ResponseWriter, r *http.Request) {
 	go http.Get("http://192.168.0.174:9999/v2ray/detect")
+	w.Write([]byte{'1'})
+}
+
+//  deprecated
+//	send nodes as json to detect quality
+func detectNodes(w http.ResponseWriter, r *http.Request) {
+	// var nodes types.Nodes
+	// decoder := json.NewDecoder(r.Body)
+	// defer r.Body.Close()
+	// decoder.Decode(&nodes)
+
+	// type tmp struct {
+	// 	Source string      `json:"source"`
+	// 	Nodes  types.Nodes `json:"nodes"`
+	// }
+	// var data = &tmp{Source: "ttt",Nodes: nodes}
+
+	// buf := bytes.NewBuffer(nil)
+	// encoder := json.NewEncoder(buf)
+	// encoder.Encode(data)
+	http.Post("http://192.168.0.174:9999/v2ray/detect/nodes", "application/json", r.Body)
 	w.Write([]byte{'1'})
 }
 
@@ -78,15 +101,30 @@ func receiveNode(w http.ResponseWriter, r *http.Request) {
 	subCfg.Nodes = nodes
 
 	d, _ := json.Marshal(subCfg)
-	w.Write(d)
+	core.WriteFile(core.V2subConfig, d)
+}
+
+func receiveMarkNode(w http.ResponseWriter, r *http.Request) {
+	var nodes types.Nodes
+	decoder := json.NewDecoder(r.Body)
+	defer r.Body.Close()
+	decoder.Decode(&nodes)
+	subCfg.Mark = nodes
+
+	d, _ := json.Marshal(subCfg)
+	core.WriteFile(core.V2subConfig, d)
 }
 
 func markNode(w http.ResponseWriter, r *http.Request) {
-	var node *types.Node
+	var node types.Node
 	decoder := json.NewDecoder(r.Body)
 	defer r.Body.Close()
-	decoder.Decode(node)
-	core.NodesQueue.Enqueue(node)
+	decoder.Decode(&node)
+	core.NodesQueue.Enqueue(&node)
+	subCfg.Mark = core.NodesQueue.Items
+
+	d, _ := json.Marshal(subCfg)
+	core.WriteFile(core.V2subConfig, d)
 	w.Write([]byte{'o', 'k'})
 }
 
@@ -95,7 +133,6 @@ func setNode(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	defer r.Body.Close()
 	decoder.Decode(node)
-	core.NodesQueue.Enqueue(node)
 	err := core.SwitchNode(node)
 	if err != nil {
 		return

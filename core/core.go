@@ -20,12 +20,12 @@ var (
 
 func LoadConf() {
 	SubCfg, _ = ReadConfig(V2subConfig)
-	NodesQueue.Items = SubCfg.History
+	NodesQueue.Items = SubCfg.Mark
 	DisableIptable()
 }
 
 func SaveConf() {
-	SubCfg.History = NodesQueue.Items
+	SubCfg.Mark = NodesQueue.Items
 	bytes, _ := json.Marshal(SubCfg)
 	WriteFile(V2subConfig, bytes)
 }

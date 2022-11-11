@@ -7,7 +7,7 @@ import (
 type Config struct {
 	SubUrl        []string `json:"subUrl"`
 	Nodes         Nodes    `json:"nodes"`
-	History       Nodes    `json:"history"`
+	Mark          Nodes    `json:"mark"`
 	Current       *Node    `json:"current"`
 	IptablePath   string   `json:"iptable"`
 	IptableSource string   `json:"ipSource"`
