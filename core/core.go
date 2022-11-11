@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	// V2subConfig = "/etc/config/v2ray/v2sub.json"
-	V2subConfig = "./v2sub.json"
+	V2subConfig = "/etc/config/v2ray/v2sub.json"
+	// V2subConfig = "./v2sub.json"
 )
 
 var (
