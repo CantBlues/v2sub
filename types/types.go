@@ -18,7 +18,7 @@ type Config struct {
 
 type V2ray struct {
 	DNSConfigs      *DNSConfig       `json:"dns"`
-	RouterConfig    *RouterConfig    `json:"router"`
+	RouterConfig    *RouterConfig    `json:"routing"`
 	OutboundConfigs []OutboundConfig `json:"outbounds"`
 	InboundConfigs  []InboundConfig  `json:"inbounds"`
 }

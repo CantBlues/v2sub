@@ -129,11 +129,11 @@ func markNode(w http.ResponseWriter, r *http.Request) {
 }
 
 func setNode(w http.ResponseWriter, r *http.Request) {
-	var node *types.Node
+	var node types.Node
 	decoder := json.NewDecoder(r.Body)
 	defer r.Body.Close()
-	decoder.Decode(node)
-	err := core.SwitchNode(node)
+	decoder.Decode(&node)
+	err := core.SwitchNode(&node)
 	if err != nil {
 		return
 	}
