@@ -56,3 +56,13 @@ trojan 功能通过 v2ray 转发实现，因此可以使用规则代理。使用
 程序会覆盖 v2ray 配置文件。
 
 This tool will truncate your v2ray config.
+
+
+## build 
+
+$env:GOMIPS="softfloat";
+$env:CGO_ENABLED=0;
+$env:GOOS="linux";
+$env:GOARCH="mips";
+go build main.go;
+./upx.exe main;

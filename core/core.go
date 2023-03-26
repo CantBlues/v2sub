@@ -137,8 +137,9 @@ func Resolve(node *types.Node) types.OutboundConfig {
 }
 
 func SwitchNode(node *types.Node) error {
-	v2ray := template.V2rayDefault
+	v2ray := *template.V2rayDefault
 	v2ray.OutboundConfigs = SetOutbound(node)
+	v2rayAddRules(&v2ray)
 	data, _ := json.Marshal(v2ray)
 	err := WriteFile(SubCfg.V2rayCfg, data)
 	if err != nil {
@@ -148,4 +149,30 @@ func SwitchNode(node *types.Node) error {
 	SaveConf()
 	RestartService()
 	return nil
+}
+
+func v2rayAddRules(v2ray *types.V2ray) {
+	directRules := genRouteRule("direct", SubCfg.DirectDomain)
+	proxyRules := genRouteRule("proxy", SubCfg.ProxyDomain)
+	v2ray.RouterConfig.Rules = append(v2ray.RouterConfig.Rules, directRules, proxyRules)
+}
+
+func genRouteRule(tag string, domains []string) []byte {
+	domain, err := json.Marshal(domains)
+	if err != nil {
+		print(err)
+	}
+	template := `{
+			"type": "field",
+			"outboundTag": "%s",
+			"domain": %s			
+		}`
+	result := fmt.Sprintf(template, tag, domain)
+	return []byte(result)
+}
+
+func SaveRouteRules(direct []string, proxy []string) {
+	SubCfg.DirectDomain = direct
+	SubCfg.ProxyDomain = proxy
+	SaveConf()
 }

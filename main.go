@@ -36,6 +36,8 @@ func main() {
 	http.HandleFunc("/iptable/toggle", toggleIptable)
 	http.HandleFunc("/start", startService)
 	http.HandleFunc("/iptable/status", checkIptable)
+	http.HandleFunc("/routerule/set", setCustomRouteRule)
+	http.HandleFunc("/routerule/get", getCustomRouteRule)
 	http.ListenAndServe(":89", nil)
 	fmt.Println("listen")
 
@@ -176,4 +178,24 @@ func checkIptable(w http.ResponseWriter, r *http.Request) {
 	if subCfg.FwStatus {
 		w.Write([]byte{'1'})
 	}
+}
+
+func setCustomRouteRule(w http.ResponseWriter, r *http.Request) {
+	type Rules struct {
+		Direct []string `json:"direct"`
+		Proxy  []string `json:"proxy"`
+	}
+	var rules Rules
+	decoder := json.NewDecoder(r.Body)
+	defer r.Body.Close()
+	if err := decoder.Decode(&rules); err != nil {
+		w.Write([]byte{'0'})
+	}
+	core.SaveRouteRules(rules.Direct, rules.Proxy)
+	w.Write([]byte{'1'})
+}
+
+func getCustomRouteRule(w http.ResponseWriter, r *http.Request) {
+	data, _ := json.Marshal(subCfg)
+	w.Write(data)
 }

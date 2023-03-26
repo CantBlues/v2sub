@@ -14,6 +14,8 @@ type Config struct {
 	FwStatus      bool     `json:"status"`
 	V2rayCfg      string   `json:"v2rayConfig"`
 	ExecPath      string   `json:"v2ray"`
+	DirectDomain  []string `json:"directDomain"`
+	ProxyDomain   []string `json:"proxyDomain"`
 }
 
 type V2ray struct {

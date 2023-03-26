@@ -20,6 +20,8 @@ var ConfigTemplate = &types.Config{
 	IptableSource: "/etc/config/v2ray/firewall.user",
 	ExecPath:      "/etc/config/v2ray/v2ray",
 	V2rayCfg:      "/etc/config/v2ray/config.json",
+	DirectDomain:  []string{},
+	ProxyDomain:   []string{},
 }
 
 // V2ray Default struct
