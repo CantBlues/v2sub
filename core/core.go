@@ -137,7 +137,10 @@ func Resolve(node *types.Node) types.OutboundConfig {
 }
 
 func SwitchNode(node *types.Node) error {
-	v2ray := *template.V2rayDefault
+	var v2ray types.V2ray
+	tempData, _ := json.Marshal(template.V2rayDefault)
+	json.Unmarshal(tempData, &v2ray)
+
 	v2ray.OutboundConfigs = SetOutbound(node)
 	v2rayAddRules(&v2ray)
 	data, _ := json.Marshal(v2ray)
