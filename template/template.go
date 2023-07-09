@@ -94,14 +94,14 @@ var DefaultRouterConfigs = &types.RouterConfig{
 					"ext:site.dat:gw"
 				]
 			}`),
-		[]byte(
-			`{
-				"type": "field",
-				"outboundTag": "block",
-				"domain": [
-					"ext:site.dat:ad"
-				]
-			}`),
+		// []byte(
+		// 	`{
+		// 		"type": "field",
+		// 		"outboundTag": "block",
+		// 		"domain": [
+		// 			"ext:site.dat:ad"
+		// 		]
+		// 	}`),
 	},
 }
 
