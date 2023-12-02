@@ -38,6 +38,14 @@ func GetNodes() types.Nodes {
 	var nodes types.Nodes
 	subCh := make(chan []string, 1)
 	defer close(subCh)
+
+	// add my own v2ray
+	if len(SubCfg.MyV2ray) > 0 {
+		ownVpn, _ := ParseNodes([]string{SubCfg.MyV2ray})
+		nodes = append(nodes, ownVpn...)
+
+	}
+
 	for _, url := range urls {
 		go GetSub(url, subCh)
 	}

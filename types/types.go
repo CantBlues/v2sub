@@ -6,6 +6,7 @@ import (
 
 type Config struct {
 	SubUrl        []string `json:"subUrl"`
+	MyV2ray       string   `json:"myV2ray"`
 	Nodes         Nodes    `json:"nodes"`
 	Mark          Nodes    `json:"mark"`
 	Current       *Node    `json:"current"`
