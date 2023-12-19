@@ -149,6 +149,13 @@ func change(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if nums == 0 {
+		core.CopyVlessJson()
+		core.RestartService()
+		w.Write([]byte{'o', 'k'})
+		return
+	}
+
 	if nums < subCfg.Nodes.Len() {
 		subCfg.Current = subCfg.Nodes[nums]
 		err := core.SwitchNode(subCfg.Nodes[nums])

@@ -46,3 +46,8 @@ func StartTestProcess(configPath string) (*exec.Cmd, error) {
 	err := cmd.Start()
 	return cmd, err
 }
+
+func CopyVlessJson(){
+	cmd := exec.Command("cp", "/etc/config/v2ray/vless.json", "/etc/config/v2ray/config.json")
+	cmd.Start()
+}
