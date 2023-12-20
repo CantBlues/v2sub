@@ -97,7 +97,7 @@ func Resolve(node *types.Node) types.OutboundConfig {
 		streamSetting.Network = node.Net
 		streamSetting.Security = node.TLS
 		streamSetting.WsStream = &types.WsStream{Path: node.Path, Header: &types.Header{Host: node.Host}}
-		streamSetting.TlsStream = &types.TlsStream{ServerName: node.Host, AllowInsecure: true}
+		streamSetting.TlsStream = &types.TlsStream{ServerName: node.Host, AllowInsecure: false}
 
 	case ssProtocol:
 		v2rayOutboundProtocol = ssProtocol
@@ -125,7 +125,7 @@ func Resolve(node *types.Node) types.OutboundConfig {
 		}
 		streamSetting.Network = "tcp"
 		streamSetting.Security = "tls"
-		streamSetting.TlsStream = &types.TlsStream{AllowInsecure: true, ServerName: node.Host}
+		streamSetting.TlsStream = &types.TlsStream{AllowInsecure: false, ServerName: node.Host}
 
 	default:
 		ExitWithMsg("unexpected protocol: "+node.Protocol, 1)
